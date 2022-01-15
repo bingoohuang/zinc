@@ -3,7 +3,6 @@ package handlers
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"io"
 
 	"github.com/rs/zerolog/log"
@@ -16,21 +15,14 @@ import (
 
 func BulkHandler(c *gin.Context) {
 	target := c.Param("target")
-
 	body := c.Request.Body
 
-	err := BulkHandlerWorker(target, &body)
-	if err != nil {
-		c.JSON(200, gin.H{
-			"message": err,
-		})
-
+	if err := BulkHandlerWorker(target, &body); err != nil {
+		c.JSON(200, gin.H{"message": err})
 		return
 	}
 
-	c.JSON(200, gin.H{
-		"message": "bulk data inserted",
-	})
+	c.JSON(200, gin.H{"message": "bulk data inserted"})
 }
 
 func BulkHandlerWorker(target string, body *io.ReadCloser) error {
@@ -49,12 +41,8 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 	batch := make(map[string]*index.Batch)
 	var indexesInThisBatch []string
 
-	documentsInBatch := 0
-
 	for scanner.Scan() { // Read each line
-
 		var doc map[string]interface{}
-
 		err := json.Unmarshal(scanner.Bytes(), &doc) // Read each line as JSON and store it in doc
 		if err != nil {
 			log.Print(err)
@@ -82,9 +70,7 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 				batch[indexName] = index.NewBatch()
 			}
 
-			exists, _ := core.IndexExists(indexName)
-
-			if !exists { // If the requested indexName does not exist then create it
+			if exists, _ := core.IndexExists(indexName); !exists { // If the requested indexName does not exist then create it
 				newIndex, err := core.NewIndex(indexName, core.Disk)
 				if err != nil {
 					return err
@@ -98,9 +84,7 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 				return err
 			}
 
-			documentsInBatch++
-
-			// Add the documen to the batch. We will persist the batch to the index
+			// Add the document to the batch. We will persist the batch to the index
 			// when we have processed all documents in the request
 			if !mintedID {
 				batch[indexName].Update(bdoc.ID(), bdoc)
@@ -109,27 +93,24 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 			}
 
 		} else { // This branch will process the metadata line in the request. Each metadata line is preceded by a data line.
-
 			for k, v := range doc {
+				vm, _ := v.(map[string]interface{})
 				if k == "index" || k == "create" || k == "update" {
 					nextLineIsData = true
-
 					lastLineMetaData["operation"] = k
 
-					if v.(map[string]interface{})["_index"] != "" { // if index is specified in metadata then it overtakes the index in the query path
-						lastLineMetaData["_index"] = v.(map[string]interface{})["_index"]
+					if vm["_index"] != "" { // if index is specified in metadata then it overtakes the index in the query path
+						lastLineMetaData["_index"] = vm["_index"]
 					} else {
 						lastLineMetaData["_index"] = target
 					}
 
-					lastLineMetaData["_id"] = v.(map[string]interface{})["_id"]
+					lastLineMetaData["_id"] = vm["_id"]
 				} else if k == "delete" {
 					nextLineIsData = false
-
 					lastLineMetaData["operation"] = k
-					lastLineMetaData["_index"] = v.(map[string]interface{})["_index"]
-					lastLineMetaData["_id"] = v.(map[string]interface{})["_id"]
-
+					lastLineMetaData["_index"] = vm["_index"]
+					lastLineMetaData["_id"] = vm["_id"]
 				}
 			}
 		}
@@ -140,14 +121,11 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 	}
 
 	for _, indexN := range indexesInThisBatch {
-
 		writer := core.ZincIndexList[indexN].Writer
 
 		// Persist the batch to the index
-		err := writer.Batch(batch[indexN])
-		if err != nil {
-			fmt.Println("Error updating batch: ", err.Error())
-			log.Print(err)
+		if err := writer.Batch(batch[indexN]); err != nil {
+			log.Print("Error updating batch: ", err.Error())
 			return err
 		}
 	}
@@ -156,7 +134,7 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 }
 
 // DoesExistInThisRequest takes a slice and looks for an element in it. If found it will
-// return it's index, otherwise it will return -1.
+// return its index, otherwise it will return -1.
 func DoesExistInThisRequest(slice []string, val string) int {
 	for i, item := range slice {
 		if item == val {
