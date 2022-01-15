@@ -21,5 +21,4 @@ func FuzzyQuery(iQuery v1.ZincQuery) (bluge.SearchRequest, error) {
 	searchRequest := buildRequest(iQuery, query)
 
 	return searchRequest, nil
-
 }

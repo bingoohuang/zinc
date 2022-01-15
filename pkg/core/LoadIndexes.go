@@ -14,16 +14,13 @@ import (
 
 var systemIndexList = []string{"_users", "_index_mapping"}
 
-// var systemIndexList = []string{}
-
 func LoadZincSystemIndexes() (map[string]*Index, error) {
 	godotenv.Load()
 	log.Print("Loading system indexes...")
 
 	IndexList := make(map[string]*Index)
 	for _, systemIndex := range systemIndexList {
-
-		tempIndex, err := NewIndex(systemIndex, "disk")
+		tempIndex, err := NewIndex(systemIndex, Disk)
 		if err != nil {
 			log.Print("Error loading system index: ", systemIndex, " : ", err.Error())
 			return nil, err
@@ -40,11 +37,10 @@ func LoadZincIndexesFromDisk() (map[string]*Index, error) {
 	godotenv.Load()
 	log.Print("Loading indexes... from disk")
 
-	IndexList := make(map[string]*Index)
+	indexList := make(map[string]*Index)
+	dataPath := zutils.GetEnv("ZINC_DATA_DIR", "./data")
 
-	DATA_PATH := zutils.GetEnv("DATA_PATH", "./data")
-
-	files, err := os.ReadDir(DATA_PATH)
+	files, err := os.ReadDir(dataPath)
 	if err != nil {
 		log.Print("Error reading data directory: ", err.Error())
 		log.Fatal().Msg("Error reading data directory: " + err.Error())
@@ -61,18 +57,18 @@ func LoadZincIndexesFromDisk() (map[string]*Index, error) {
 		}
 
 		if !iNameIsSystemIndex {
-			tempIndex, err := NewIndex(iName, "disk")
+			tempIndex, err := NewIndex(iName, Disk)
 			if err != nil {
 				log.Print("Error loading index: ", iName, " : ", err.Error()) // inform and move in to next index
 			} else {
-				IndexList[iName] = tempIndex
-				IndexList[iName].IndexType = "user"
+				indexList[iName] = tempIndex
+				indexList[iName].IndexType = "user"
 				log.Print("Index loaded: " + iName)
 			}
 		}
 	}
 
-	return IndexList, nil
+	return indexList, nil
 }
 
 func LoadZincIndexesFromS3() (map[string]*Index, error) {
@@ -87,27 +83,24 @@ func LoadZincIndexesFromS3() (map[string]*Index, error) {
 
 	IndexList := make(map[string]*Index)
 
-	S3_BUCKET := zutils.GetEnv("S3_BUCKET", "")
+	bucket := zutils.GetEnv("S3_BUCKET", "")
 	delimiter := "/"
 
 	ctx := context.Background()
 	params := s3.ListObjectsV2Input{
-		Bucket:    &S3_BUCKET,
+		Bucket:    &bucket,
 		Delimiter: &delimiter,
 	}
 
 	val, err := client.ListObjectsV2(ctx, &params)
-
 	if err != nil {
 		log.Print("failed to list indexes in s3: ", err.Error())
 		return nil, err
 	}
 
 	for _, obj := range val.CommonPrefixes {
-
 		iName := (*obj.Prefix)[0 : len(*obj.Prefix)-1]
-
-		tempIndex, err := NewIndex(iName, "s3")
+		tempIndex, err := NewIndex(iName, S3)
 
 		if err != nil {
 			log.Print("failed to load index "+iName+" in s3: ", err.Error())
@@ -117,7 +110,6 @@ func LoadZincIndexesFromS3() (map[string]*Index, error) {
 			IndexList[iName].StorageType = "s3"
 			log.Print("Index loaded: " + iName)
 		}
-
 	}
 
 	return IndexList, nil

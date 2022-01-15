@@ -45,11 +45,9 @@ spec:
         - name: zinc
           image: public.ecr.aws/prabhat/zinc:latest
           env:
-            - name: FIRST_ADMIN_USER
-              value: admin
-            - name: FIRST_ADMIN_PASSWORD
-              value: Complexpass#123
-            - name: DATA_PATH
+            - name: ZINC_ADMIN
+              value: admin:Complexpass#123
+            - name: ZINC_DATA_DIR
               value: /go/bin/data
           # command: ["/bin/bash", "-c", "while true; do sleep 1; done"]
           imagePullPolicy: IfNotPresent

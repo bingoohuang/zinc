@@ -6,22 +6,26 @@ import (
 	"github.com/prabhatsharma/zinc/pkg/zutils"
 )
 
+type StorageType string
+
+const (
+	Disk StorageType = "disk"
+	S3   StorageType = "s3"
+)
+
 // NewIndex creates an instance of a physical zinc index that can be used to store and retrieve data.
-func NewIndex(name string, storageType string) (*Index, error) {
-
-	var config bluge.Config
-
-	if storageType == "s3" {
-		S3_BUCKET := zutils.GetEnv("S3_BUCKET", "")
-		config = directory.GetS3Config(S3_BUCKET, name)
-	} else { // Default storage type is disk
-		DATA_PATH := zutils.GetEnv("DATA_PATH", "./data")
-
-		config = bluge.DefaultConfig(DATA_PATH + "/" + name)
-	}
+func NewIndex(name string, storageType StorageType) (*Index, error) {
+	config := func(storageType StorageType) bluge.Config {
+		if storageType == S3 {
+			s := zutils.GetEnv("S3_BUCKET", "")
+			return directory.GetS3Config(s, name)
+		} else { // Default storage type is disk
+			s := zutils.GetEnv("ZINC_DATA_DIR", "./data")
+			return bluge.DefaultConfig(s + "/" + name)
+		}
+	}(storageType)
 
 	writer, err := bluge.OpenWriter(config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -42,9 +46,9 @@ func NewIndex(name string, storageType string) (*Index, error) {
 	return index, nil
 }
 
-func IndexExists(index string) (bool, string) {
-	if _, ok := ZINC_INDEX_LIST[index]; ok {
-		return true, ZINC_INDEX_LIST[index].StorageType
+func IndexExists(index string) (bool, StorageType) {
+	if _, ok := ZincIndexList[index]; ok {
+		return true, ZincIndexList[index].StorageType
 	}
 
 	return false, ""

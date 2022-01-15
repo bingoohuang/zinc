@@ -8,7 +8,7 @@ import (
 	"github.com/prabhatsharma/zinc/pkg/core"
 )
 
-func DeleteDocument(c *gin.Context) {
+func DeleteDoc(c *gin.Context) {
 	indexName := c.Param("target")
 	query_id := c.Param("id")
 
@@ -25,13 +25,12 @@ func DeleteDocument(c *gin.Context) {
 
 	bdoc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
 
-	docIndexWriter := core.ZINC_INDEX_LIST[indexName].Writer
+	docIndexWriter := core.ZincIndexList[indexName].Writer
 
 	err := docIndexWriter.Delete(bdoc.ID())
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err)
-
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "Deleted", "index": indexName, "id": query_id})
 	}

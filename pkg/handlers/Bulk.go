@@ -20,7 +20,6 @@ func BulkHandler(c *gin.Context) {
 	body := c.Request.Body
 
 	err := BulkHandlerWorker(target, &body)
-
 	if err != nil {
 		c.JSON(200, gin.H{
 			"message": err,
@@ -65,7 +64,7 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 		// Docs at https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
 		if nextLineIsData {
 			nextLineIsData = false
-			var id = ""
+			id := ""
 			mintedID := false
 
 			if val, ok := lastLineMetaData["id"]; ok {
@@ -86,17 +85,15 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 			exists, _ := core.IndexExists(indexName)
 
 			if !exists { // If the requested indexName does not exist then create it
-				newIndex, err := core.NewIndex(indexName, "disk")
-
+				newIndex, err := core.NewIndex(indexName, core.Disk)
 				if err != nil {
 					return err
 				}
 
-				core.ZINC_INDEX_LIST[indexName] = newIndex // Load the index in memory
+				core.ZincIndexList[indexName] = newIndex // Load the index in memory
 			}
 
-			bdoc, err := core.ZINC_INDEX_LIST[indexName].BuildBlugeDocumentFromJSON(id, &doc)
-
+			bdoc, err := core.ZincIndexList[indexName].BuildBlugeDocFromJSON(id, &doc)
 			if err != nil {
 				return err
 			}
@@ -144,7 +141,7 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 
 	for _, indexN := range indexesInThisBatch {
 
-		writer := core.ZINC_INDEX_LIST[indexN].Writer
+		writer := core.ZincIndexList[indexN].Writer
 
 		// Persist the batch to the index
 		err := writer.Batch(batch[indexN])
@@ -156,7 +153,6 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 	}
 
 	return nil
-
 }
 
 // DoesExistInThisRequest takes a slice and looks for an element in it. If found it will

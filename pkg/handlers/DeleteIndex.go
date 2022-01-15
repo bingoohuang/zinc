@@ -29,17 +29,17 @@ func DeleteIndex(c *gin.Context) {
 	}
 
 	// 1. Close the index writer
-	core.ZINC_INDEX_LIST[indexName].Writer.Close()
+	core.ZincIndexList[indexName].Writer.Close()
 
 	// 2. Delete from the cache
-	delete(core.ZINC_INDEX_LIST, indexName)
+	delete(core.ZincIndexList, indexName)
 
 	// 3. Physically delete the index
 	deleteIndexMapping := false
 	if indexStorageType == "disk" {
-		DATA_PATH := zutils.GetEnv("DATA_PATH", "./data")
+		ZINC_DATA_DIR := zutils.GetEnv("ZINC_DATA_DIR", "./data")
 
-		err := os.RemoveAll(DATA_PATH + "/" + indexName)
+		err := os.RemoveAll(ZINC_DATA_DIR + "/" + indexName)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -66,7 +66,7 @@ func DeleteIndex(c *gin.Context) {
 	if deleteIndexMapping {
 		// 4. Delete the index mapping
 		bdoc := bluge.NewDocument(indexName)
-		err := core.ZINC_SYSTEM_INDEX_LIST["_index_mapping"].Writer.Delete(bdoc.ID())
+		err := core.ZincSystemIndexList["_index_mapping"].Writer.Delete(bdoc.ID())
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{

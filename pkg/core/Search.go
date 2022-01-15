@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (index *Index) Search(iQuery v1.ZincQuery) (v1.SearchResponse, error) {
+func (ind *Index) Search(iQuery v1.ZincQuery) (v1.SearchResponse, error) {
 	var Hits []v1.Hit
 
 	var searchRequest bluge.SearchRequest
@@ -62,16 +62,16 @@ func (index *Index) Search(iQuery v1.ZincQuery) (v1.SearchResponse, error) {
 	// searchRequest.AddAggregation("@timestamp", timestampAggregation)
 	// sample time range aggregation end
 
-	writer := index.Writer
+	writer := ind.Writer
 
 	reader, err := writer.Reader()
 	if err != nil {
-		log.Print("error accessing reader: %v", err)
+		log.Printf("error accessing reader: %v", err)
 	}
 
 	dmi, err := reader.Search(context.Background(), searchRequest)
 	if err != nil {
-		log.Print("error executing search: %v", err)
+		log.Printf("error executing search: %v", err)
 	}
 
 	// highlighter := highlight.NewANSIHighlighter()
@@ -96,12 +96,12 @@ func (index *Index) Search(iQuery v1.ZincQuery) (v1.SearchResponse, error) {
 			return true
 		})
 		if err != nil {
-			log.Print("error accessing stored fields: %v", err)
+			log.Printf("error accessing stored fields: %v", err)
 		}
 
 		hit := v1.Hit{
-			Index:     index.Name,
-			Type:      index.Name,
+			Index:     ind.Name,
+			Type:      ind.Name,
 			ID:        id,
 			Score:     next.Score,
 			Timestamp: timestamp,
@@ -114,7 +114,7 @@ func (index *Index) Search(iQuery v1.ZincQuery) (v1.SearchResponse, error) {
 		Hits = append(Hits, hit)
 	}
 	if err != nil {
-		log.Print("error iterating results: %v", err)
+		log.Printf("error iterating results: %v", err)
 	}
 
 	// fmt.Println("Got results after data load from disk in: ", time.Since(iterationStartTime))

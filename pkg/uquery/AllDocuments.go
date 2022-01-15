@@ -6,17 +6,14 @@ import (
 )
 
 func AllDocuments(iQuery v1.ZincQuery) (bluge.SearchRequest, error) {
-
 	dateQuery := bluge.NewDateRangeQuery(iQuery.Query.StartTime, iQuery.Query.EndTime).SetField("@timestamp")
+	allQuery := bluge.NewMatchAllQuery()
 
-	allquery := bluge.NewMatchAllQuery()
-
-	query := bluge.NewBooleanQuery().AddMust(dateQuery).AddMust(allquery)
+	query := bluge.NewBooleanQuery().AddMust(dateQuery).AddMust(allQuery)
 
 	// iQuery.MaxResults = 20
 
 	searchRequest := buildRequest(iQuery, query)
 
 	return searchRequest, nil
-
 }

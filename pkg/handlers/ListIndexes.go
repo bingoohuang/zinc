@@ -8,8 +8,8 @@ import (
 )
 
 func ListIndexes(c *gin.Context) {
-	var indexListMap = make(map[string]*SimpleIndex)
-	for name, value := range core.ZINC_INDEX_LIST {
+	indexListMap := make(map[string]*SimpleIndex)
+	for name, value := range core.ZincIndexList {
 		indexListMap[name] = &SimpleIndex{
 			Name:          name,
 			CachedMapping: value.CachedMapping,

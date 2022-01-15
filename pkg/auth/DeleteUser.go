@@ -8,12 +8,11 @@ import (
 )
 
 func DeleteUser(userId string) bool {
-
 	bdoc := bluge.NewDocument(userId)
 
 	bdoc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
 
-	usersIndexWriter := core.ZINC_SYSTEM_INDEX_LIST["_users"].Writer
+	usersIndexWriter := core.ZincSystemIndexList["_users"].Writer
 
 	err := usersIndexWriter.Delete(bdoc.ID())
 	if err != nil {

@@ -10,7 +10,6 @@ import (
 
 // SearchIndex searches the index for the given http request from end user
 func SearchIndex(c *gin.Context) {
-
 	indexName := c.Param("target")
 	indexExists, _ := core.IndexExists(indexName)
 
@@ -23,7 +22,7 @@ func SearchIndex(c *gin.Context) {
 
 	c.BindJSON(&iQuery)
 
-	index := core.ZINC_INDEX_LIST[indexName]
+	index := core.ZincIndexList[indexName]
 	res, errS := index.Search(iQuery)
 
 	if errS != nil {
@@ -32,5 +31,4 @@ func SearchIndex(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, res)
-
 }

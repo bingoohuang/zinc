@@ -11,9 +11,8 @@
             "mode": "auto",
             "program": "cmd/zinc/main.go",
             "env": {
-                "FIRST_ADMIN_USER": "admin",
-                "FIRST_ADMIN_PASSWORD": "Complexpass#123",
-                "DATA_PATH": "../../data"
+                "ZINC_ADMIN": "admin:admin#123",
+                "ZINC_DATA_DIR": "../../data"
             }
         }
     ]

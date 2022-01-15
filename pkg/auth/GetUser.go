@@ -16,13 +16,13 @@ func GetUser(userId string) (bool, ZincUser, error) {
 
 	searchRequest := bluge.NewTopNSearch(1, query)
 
-	usersIndex := core.ZINC_SYSTEM_INDEX_LIST["_users"]
+	usersIndex := core.ZincSystemIndexList["_users"]
 
 	reader, _ := usersIndex.Writer.Reader()
 
 	dmi, err := reader.Search(context.Background(), searchRequest)
 	if err != nil {
-		log.Print("error executing search: %v", err)
+		log.Printf("error executing search: %v", err)
 	}
 
 	next, err := dmi.Next()
@@ -55,7 +55,7 @@ func GetUser(userId string) (bool, ZincUser, error) {
 			return true
 		})
 		if err != nil {
-			log.Print("error accessing stored fields: %v", err)
+			log.Printf("error accessing stored fields: %v", err)
 			return userExists, user, err
 		} else {
 			return userExists, user, nil
@@ -66,5 +66,4 @@ func GetUser(userId string) (bool, ZincUser, error) {
 	}
 
 	return false, user, nil
-
 }

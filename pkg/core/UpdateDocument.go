@@ -1,16 +1,14 @@
 package core
 
 // UpdateDocument inserts or updates a document in the zinc index
-func (index *Index) UpdateDocument(docID string, doc *map[string]interface{}, mintedID bool) error {
-
-	bdoc, err := index.BuildBlugeDocumentFromJSON(docID, doc)
-
+func (ind *Index) UpdateDocument(docID string, doc *map[string]interface{}, mintedID bool) error {
+	bdoc, err := ind.BuildBlugeDocFromJSON(docID, doc)
 	if err != nil {
 		return err
 	}
 
 	// Finally update the document on disk
-	writer := index.Writer
+	writer := ind.Writer
 	if !mintedID {
 		err = writer.Update(bdoc.ID(), bdoc)
 	} else {
@@ -22,5 +20,4 @@ func (index *Index) UpdateDocument(docID string, doc *map[string]interface{}, mi
 	}
 
 	return nil
-
 }

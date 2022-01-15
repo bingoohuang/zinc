@@ -11,11 +11,9 @@ import (
 )
 
 func CreateUser(userId, name, plaintextPassword, role string) (*ZincUser, error) {
-
 	var newUser *ZincUser
 
 	userExists, existingUser, err := GetUser(userId)
-
 	if err != nil {
 		return nil, err
 	}
@@ -42,20 +40,20 @@ func CreateUser(userId, name, plaintextPassword, role string) (*ZincUser, error)
 		newUser.Password = GeneratePassword(plaintextPassword, newUser.Salt)
 	}
 
-	bdoc := bluge.NewDocument(newUser.ID)
+	doc := bluge.NewDocument(newUser.ID)
 
-	bdoc.AddField(bluge.NewTextField("name", newUser.Name).StoreValue())
-	bdoc.AddField(bluge.NewStoredOnlyField("password", []byte(newUser.Password)).StoreValue())
-	bdoc.AddField(bluge.NewStoredOnlyField("role", []byte(newUser.Role)).StoreValue())
-	bdoc.AddField(bluge.NewStoredOnlyField("salt", []byte(newUser.Salt)).StoreValue())
-	bdoc.AddField(bluge.NewDateTimeField("created_at", newUser.CreatedAt).StoreValue())
-	bdoc.AddField(bluge.NewDateTimeField("updated_at", newUser.Timestamp).StoreValue())
+	doc.AddField(bluge.NewTextField("name", newUser.Name).StoreValue())
+	doc.AddField(bluge.NewStoredOnlyField("password", []byte(newUser.Password)).StoreValue())
+	doc.AddField(bluge.NewStoredOnlyField("role", []byte(newUser.Role)).StoreValue())
+	doc.AddField(bluge.NewStoredOnlyField("salt", []byte(newUser.Salt)).StoreValue())
+	doc.AddField(bluge.NewDateTimeField("created_at", newUser.CreatedAt).StoreValue())
+	doc.AddField(bluge.NewDateTimeField("updated_at", newUser.Timestamp).StoreValue())
 
-	bdoc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
+	doc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
 
-	usersIndexWriter := core.ZINC_SYSTEM_INDEX_LIST["_users"].Writer
+	usersIndexWriter := core.ZincSystemIndexList["_users"].Writer
 
-	err = usersIndexWriter.Update(bdoc.ID(), bdoc)
+	err = usersIndexWriter.Update(doc.ID(), doc)
 	if err != nil {
 		fmt.Println("error updating document:", err)
 		return nil, err

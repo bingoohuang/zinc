@@ -14,7 +14,6 @@ func CreateUpdateUser(c *gin.Context) {
 	c.BindJSON(&user)
 
 	newUser, err := auth.CreateUser(user.ID, user.Name, user.Password, user.Role)
-
 	if err != nil {
 		c.JSON(200, gin.H{
 			"message": err.Error(),

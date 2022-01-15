@@ -8,11 +8,12 @@ import (
 //go:embed web/dist
 var embedFrontend embed.FS
 
-func GetFrontendAssets() (fs.FS, error) {
+// FrontendAssets returns the frontend assets.
+var FrontendAssets = func() fs.FS {
 	f, err := fs.Sub(embedFrontend, "web/dist")
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return f, nil
-}
+	return f
+}()

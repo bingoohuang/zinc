@@ -7,13 +7,8 @@ import (
 )
 
 func MatchQuery(iQuery v1.ZincQuery) (bluge.SearchRequest, error) {
-	// startTime := time.Now()
-
-	// dateQuery := bluge.NewDateRangeQuery(iQuery.Query.StartTime, iQuery.Query.EndTime)
 	dateQuery := bluge.NewDateRangeQuery(iQuery.Query.StartTime, iQuery.Query.EndTime).SetField("@timestamp")
 	dateQuery.SetField("@timestamp")
-
-	// fmt.Println("Start time", iQuery.Query.StartTime, ", End time: ", iQuery.Query.EndTime)
 
 	var field string
 	if iQuery.Query.Field != "" {
@@ -26,9 +21,5 @@ func MatchQuery(iQuery v1.ZincQuery) (bluge.SearchRequest, error) {
 	query := bluge.NewBooleanQuery().AddMust(dateQuery).AddMust(matchQuery)
 
 	searchRequest := buildRequest(iQuery, query)
-
-	// endTime := time.Now()
-	// fmt.Println("Query time: ", endTime.Sub(startTime))
-
 	return searchRequest, nil
 }

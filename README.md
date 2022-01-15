@@ -1,4 +1,5 @@
 Note: Zinc and all its APIs are considered to be alpha stage at this time. Expect breaking changes in API contracts and data format before at this stage.
+
 # Zinc Search Engine
 
 Zinc is a search engine that does full text indexing. It is a lightweight alternative to Elasticsearch and runs using a fraction of the resources. It uses [bluge](https://github.com/blugelabs/bluge) as the underlying indexing library.
@@ -8,12 +9,6 @@ It is very simple and easy to operate as opposed to Elasticsearch which requires
 It is a drop-in replacement for Elasticsearch if you are just ingesting data using APIs and searching using kibana (Kibana is not supported with zinc. Zinc provides its own UI).
 
 Check the below video for a quick demo of Zinc.
-
-[![Zinc Youtube](./screenshots/zinc-youtube.jpg)](https://www.youtube.com/watch?v=aZXtuVjt1ow)
-
-Join slack channel
-
-[![Slack](./screenshots/slack.png)](https://join.slack.com/t/zinc-nvh4832/shared_invite/zt-10a4jb2nl-tQUWwVQgylFEImicA7Fw6A)
 
 # Why zinc
 
@@ -54,8 +49,7 @@ Join slack channel
 Binaries can be downloaded from [releases](https://github.com/prabhatsharma/zinc/releases) page for appropriate platform.
 
 ```shell
-C:\> set FIRST_ADMIN_USER=admin
-C:\> set FIRST_ADMIN_PASSWORD=Complexpass#123
+C:\> set admin=admin:admin
 C:\> mkdir data
 C:\> zinc.exe
 ```
@@ -67,7 +61,7 @@ C:\> zinc.exe
 
 > $ mkdir data
 
-> $ FIRST_ADMIN_USER=admin FIRST_ADMIN_PASSWORD=Complexpass#123 zinc 
+> $ ZINC_ADMIN=admin:admin zinc 
 
 Now point your browser to http://localhost:4080 and login
 
@@ -77,7 +71,7 @@ Binaries can be downloaded from [releases](https://github.com/prabhatsharma/zinc
 Create a data folder that will store the data
 > $ mkdir data
 
-> $ FIRST_ADMIN_USER=admin FIRST_ADMIN_PASSWORD=Complexpass#123 ./zinc 
+> $ ZINC_ADMIN=admin:admin ./zinc 
 
 Now point your browser to http://localhost:4080 and login
 
@@ -87,7 +81,7 @@ Docker images are available at https://gallery.ecr.aws/prabhat/zinc
 
 > $ mkdir data
 
-> $ docker run -v /full/path/of/data:/data -e DATA_PATH="/data" -p 4080:4080 -e FIRST_ADMIN_USER=admin -e FIRST_ADMIN_PASSWORD=Complexpass#123 --name zinc public.ecr.aws/prabhat/zinc:latest
+> $ docker run -v /full/path/of/data:/data -e ZINC_DATA_DIR="/data" -p 4080:4080 -e ZINC_ADMIN=admin:admin --name zinc public.ecr.aws/prabhat/zinc:latest
 
 Now point your browser to http://localhost:4080 and login
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -15,20 +16,26 @@ func init() {
 	}
 	if firstStart {
 		// create default user from environment variable
-		adminUser := os.Getenv("FIRST_ADMIN_USER")
-		adminPassword := os.Getenv("FIRST_ADMIN_PASSWORD")
-
-		if adminUser == "" || adminPassword == "" {
-			log.Fatal("FIRST_ADMIN_USER and FIRST_ADMIN_PASSWORD must be set on first start. You should also change the credentials after first login.")
+		admin := os.Getenv("ZINC_ADMIN")
+		adminUser, adminPassword := Cut(admin, ":")
+		if adminUser == "" {
+			log.Fatal("ZINC_ADMIN must be set on first start. You should also change the credentials after first login.")
 		}
 		CreateUser(adminUser, "", adminPassword, "admin")
 	}
 }
 
+func Cut(s, sep string) (a, b string) {
+	idx := strings.Index(s, sep)
+	if idx < 0 {
+		return s, ""
+	}
+
+	return s[:idx], s[idx+len(sep):]
+}
+
 func IsFirstStart() (bool, error) {
-
 	userList, err := GetAllUsersWorker()
-
 	if err != nil {
 		return true, err
 	}
@@ -40,11 +47,9 @@ func IsFirstStart() (bool, error) {
 	}
 
 	return false, nil
-
 }
 
 func Logger(m interface{}) {
-
 	k1, _ := json.Marshal(m)
 
 	var k2 map[string]interface{}

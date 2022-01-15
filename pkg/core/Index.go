@@ -2,11 +2,10 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"time"
-
-	"encoding/json"
 
 	"github.com/jeremywohl/flatten"
 	"github.com/prabhatsharma/zinc/pkg/zutils"
@@ -15,14 +14,12 @@ import (
 	"github.com/blugelabs/bluge"
 )
 
-// BuildBlugeDocumentFromJSON returns the bluge document for the json document. It also updates the mapping for the fields if not found.
+// BuildBlugeDocFromJSON returns the bluge document for the json document. It also updates the mapping for the fields if not found.
 // If no mappings are found, it creates te mapping for all the encountered fields. If mapping for some fields is found but not for others
 // then it creates the mapping for the missing fields.
-func (rindex *Index) BuildBlugeDocumentFromJSON(docID string, doc *map[string]interface{}) (*bluge.Document, error) {
-
+func (ind *Index) BuildBlugeDocFromJSON(docID string, doc *map[string]interface{}) (*bluge.Document, error) {
 	// Pick the index mapping from the cache if it already exists
-	indexMapping := rindex.CachedMapping
-
+	indexMapping := ind.CachedMapping
 	if indexMapping == nil {
 		indexMapping = make(map[string]string)
 	}
@@ -60,30 +57,28 @@ func (rindex *Index) BuildBlugeDocumentFromJSON(docID string, doc *map[string]in
 
 				indexMappingNeedsUpdate = true
 			}
-
 		}
 
 		if value != nil {
 			switch indexMapping[key] {
 			case "text": // found using existing index mapping
-				stringField := bluge.NewTextField(key, value.(string)).SearchTermPositions()
-				bdoc.AddField(stringField)
+				f := bluge.NewTextField(key, value.(string)).SearchTermPositions()
+				bdoc.AddField(f)
 			case "numeric": // found using existing index mapping
-				numericField := bluge.NewNumericField(key, value.(float64))
-				bdoc.AddField(numericField)
+				f := bluge.NewNumericField(key, value.(float64))
+				bdoc.AddField(f)
 			case "keyword": // found using existing index mapping
-				value := value.(bool)
-				keywordField := bluge.NewKeywordField(key, strconv.FormatBool(value))
-				bdoc.AddField(keywordField)
+				f := bluge.NewKeywordField(key, strconv.FormatBool(value.(bool)))
+				bdoc.AddField(f)
 			case "time": // found using existing index mapping
-				timeField := bluge.NewDateTimeField(key, value.(time.Time))
-				bdoc.AddField(timeField)
+				f := bluge.NewDateTimeField(key, value.(time.Time))
+				bdoc.AddField(f)
 			}
 		}
 	}
 
 	if indexMappingNeedsUpdate {
-		rindex.SetMapping(indexMapping)
+		ind.SetMapping(indexMapping)
 	}
 
 	docByteVal, _ := json.Marshal(*doc)
@@ -95,12 +90,11 @@ func (rindex *Index) BuildBlugeDocumentFromJSON(docID string, doc *map[string]in
 }
 
 // SetMapping Saves the mapping of the index to _index_mapping index
-// index: Name of the index ffor which the mapping needs to be saved
-// iMap: a map of the fileds that specify name and type of the field. e.g. movietitle: string
-func (index *Index) SetMapping(iMap map[string]string) error {
-
+// index: Name of the index for which the mapping needs to be saved
+// iMap: a map of the fields at specify name and type of the field. e.g. movietitle: string
+func (ind *Index) SetMapping(iMap map[string]string) error {
 	// Create a new bluge document
-	bdoc := bluge.NewDocument(index.Name)
+	bdoc := bluge.NewDocument(ind.Name)
 
 	for k, v := range iMap {
 		bdoc.AddField(bluge.NewTextField(k, v).StoreValue())
@@ -109,36 +103,35 @@ func (index *Index) SetMapping(iMap map[string]string) error {
 	bdoc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
 
 	// update on the disk
-	systemIndex := ZINC_SYSTEM_INDEX_LIST["_index_mapping"].Writer
+	systemIndex := ZincSystemIndexList["_index_mapping"].Writer
 	err := systemIndex.Update(bdoc.ID(), bdoc)
 	if err != nil {
-		log.Print("error updating document: %v", err)
+		log.Printf("error updating document: %v", err)
 		return err
 	}
 
 	// update in the cache
-	index.CachedMapping = iMap
+	ind.CachedMapping = iMap
 
 	return nil
 }
 
 // GetStoredMapping returns the mappings of all the indexes from _index_mapping system index
-func (index *Index) GetStoredMapping() (map[string]string, error) {
+func (ind *Index) GetStoredMapping() (map[string]string, error) {
+	dataPath := zutils.GetEnv("ZINC_DATA_DIR", "./data")
 
-	DATA_PATH := zutils.GetEnv("DATA_PATH", "./data")
-
-	systemPath := DATA_PATH + "/_index_mapping"
+	systemPath := dataPath + "/_index_mapping"
 
 	config := bluge.DefaultConfig(systemPath)
 
 	reader, err := bluge.OpenReader(config)
 	if err != nil {
-		return nil, nil //probably no system index available
+		return nil, nil // probably no system index available
 		// log.Fatalf("GetIndexMapping: unable to open reader: %v", err)
 	}
 
 	// search for the index mapping _index_mapping index
-	query := bluge.NewTermQuery(index.Name).SetField("_id")
+	query := bluge.NewTermQuery(ind.Name).SetField("_id")
 	searchRequest := bluge.NewTopNSearch(1, query) // Should get just 1 result at max
 
 	dmi, err := reader.Search(context.Background(), searchRequest)
@@ -147,7 +140,6 @@ func (index *Index) GetStoredMapping() (map[string]string, error) {
 	}
 
 	next, err := dmi.Next()
-
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +148,6 @@ func (index *Index) GetStoredMapping() (map[string]string, error) {
 		result := make(map[string]string)
 
 		err = next.VisitStoredFields(func(field string, value []byte) bool {
-
 			result[field] = string(value)
 			return true
 		})
@@ -171,5 +162,4 @@ func (index *Index) GetStoredMapping() (map[string]string, error) {
 	reader.Close()
 
 	return nil, nil
-
 }
