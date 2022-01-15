@@ -6,8 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/joho/godotenv"
-	"github.com/prabhatsharma/zinc/pkg/zutils"
+	"github.com/prabhatsharma/zinc/pkg/zutil"
 
 	"github.com/rs/zerolog/log"
 )
@@ -15,7 +14,6 @@ import (
 var systemIndexList = []string{"_users", "_index_mapping"}
 
 func LoadZincSystemIndexes() (map[string]*Index, error) {
-	godotenv.Load()
 	log.Print("Loading system indexes...")
 
 	IndexList := make(map[string]*Index)
@@ -34,31 +32,18 @@ func LoadZincSystemIndexes() (map[string]*Index, error) {
 }
 
 func LoadZincIndexesFromDisk() (map[string]*Index, error) {
-	godotenv.Load()
 	log.Print("Loading indexes... from disk")
 
 	indexList := make(map[string]*Index)
-	dataPath := zutils.GetEnv("ZINC_DATA_DIR", "./data")
-
-	files, err := os.ReadDir(dataPath)
+	files, err := os.ReadDir(zutil.GetDataDir())
 	if err != nil {
-		log.Print("Error reading data directory: ", err.Error())
 		log.Fatal().Msg("Error reading data directory: " + err.Error())
 	}
 
 	for _, f := range files {
 		iName := f.Name()
-
-		iNameIsSystemIndex := false
-		for _, systemIndex := range systemIndexList {
-			if iName == systemIndex {
-				iNameIsSystemIndex = true
-			}
-		}
-
-		if !iNameIsSystemIndex {
-			tempIndex, err := NewIndex(iName, Disk)
-			if err != nil {
+		if isSystemIndex := zutil.SliceContains(systemIndexList, iName); !isSystemIndex {
+			if tempIndex, err := NewIndex(iName, Disk); err != nil {
 				log.Print("Error loading index: ", iName, " : ", err.Error()) // inform and move in to next index
 			} else {
 				indexList[iName] = tempIndex
@@ -72,7 +57,11 @@ func LoadZincIndexesFromDisk() (map[string]*Index, error) {
 }
 
 func LoadZincIndexesFromS3() (map[string]*Index, error) {
-	godotenv.Load()
+	bucket := zutil.GetS3Bucket()
+	if bucket == "" {
+		return nil, nil
+	}
+
 	log.Print("Loading indexes from s3...")
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -80,10 +69,8 @@ func LoadZincIndexesFromS3() (map[string]*Index, error) {
 		log.Print("Error loading AWS config: ", err)
 	}
 	client := s3.NewFromConfig(cfg)
-
 	IndexList := make(map[string]*Index)
 
-	bucket := zutils.GetEnv("S3_BUCKET", "")
 	delimiter := "/"
 
 	ctx := context.Background()
@@ -107,7 +94,7 @@ func LoadZincIndexesFromS3() (map[string]*Index, error) {
 		} else {
 			IndexList[iName] = tempIndex
 			IndexList[iName].IndexType = "user"
-			IndexList[iName].StorageType = "s3"
+			IndexList[iName].StorageType = S3
 			log.Print("Index loaded: " + iName)
 		}
 	}

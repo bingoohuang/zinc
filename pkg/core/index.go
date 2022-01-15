@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jeremywohl/flatten"
-	"github.com/prabhatsharma/zinc/pkg/zutils"
+	"github.com/prabhatsharma/zinc/pkg/zutil"
 	"github.com/rs/zerolog/log"
 
 	"github.com/blugelabs/bluge"
@@ -118,12 +118,7 @@ func (ind *Index) SetMapping(iMap map[string]string) error {
 
 // GetStoredMapping returns the mappings of all the indexes from _index_mapping system index
 func (ind *Index) GetStoredMapping() (map[string]string, error) {
-	dataPath := zutils.GetEnv("ZINC_DATA_DIR", "./data")
-
-	systemPath := dataPath + "/_index_mapping"
-
-	config := bluge.DefaultConfig(systemPath)
-
+	config := bluge.DefaultConfig(zutil.GetDataDir() + "/_index_mapping")
 	reader, err := bluge.OpenReader(config)
 	if err != nil {
 		return nil, nil // probably no system index available

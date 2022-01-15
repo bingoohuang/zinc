@@ -28,7 +28,7 @@ spec:
                 secretKeyRef:
                   key: "admin"
                   name: {{ include "zinc.admin" . }}
-            - name: ZINC_DATA_DIR
+            - name: ZINC_DIR
               value: /go/bin/data
           # command: ["/bin/bash", "-c", "while true; do sleep 1; done"]
           resources:

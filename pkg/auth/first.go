@@ -1,12 +1,11 @@
 package auth
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
-	"time"
+
+	"github.com/prabhatsharma/zinc/pkg/zutil"
 )
 
 func init() {
@@ -16,12 +15,12 @@ func init() {
 	}
 	if firstStart {
 		// create default user from environment variable
-		admin := os.Getenv("ZINC_ADMIN")
-		adminUser, adminPassword := Cut(admin, ":")
-		if adminUser == "" {
+		admin := zutil.GetEnv("ZINC_ADMIN", "admin:admin")
+		user, password := Cut(admin, ":")
+		if user == "" {
 			log.Fatal("ZINC_ADMIN must be set on first start. You should also change the credentials after first login.")
 		}
-		CreateUser(adminUser, "", adminPassword, "admin")
+		CreateUser(user, "", password, "admin")
 	}
 }
 
@@ -40,22 +39,9 @@ func IsFirstStart() (bool, error) {
 		return true, err
 	}
 
-	// Logger(userList)
-
 	if userList.Hits.Total.Value == 0 {
 		return true, nil
 	}
 
 	return false, nil
-}
-
-func Logger(m interface{}) {
-	k1, _ := json.Marshal(m)
-
-	var k2 map[string]interface{}
-	json.Unmarshal(k1, &k2)
-	k2["time"] = time.Now()
-
-	k3, _ := json.Marshal(k2)
-	fmt.Println(string(k3))
 }

@@ -47,7 +47,7 @@ spec:
           env:
             - name: ZINC_ADMIN
               value: admin:Complexpass#123
-            - name: ZINC_DATA_DIR
+            - name: ZINC_DIR
               value: /go/bin/data
           # command: ["/bin/bash", "-c", "while true; do sleep 1; done"]
           imagePullPolicy: IfNotPresent

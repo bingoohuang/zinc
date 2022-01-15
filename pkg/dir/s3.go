@@ -1,4 +1,4 @@
-package directory
+package dir
 
 import (
 	"bytes"
@@ -22,18 +22,18 @@ import (
 // indexName: the name of the index to use. It will be an s3 prefix (folder)
 func GetS3Config(bucket, indexName string) bluge.Config {
 	return bluge.DefaultConfigWithDirectory(func() index.Directory {
-		return NewS3Directory(bucket, indexName)
+		return newS3Dir(bucket, indexName)
 	})
 }
 
-type S3Directory struct {
+type s3Dir struct {
 	Bucket string
 	Prefix string
 	Client *s3.Client
 }
 
-// NewS3Directory creates a new S3Directory instance which can be used to create s3 backed indexes
-func NewS3Directory(bucket, prefix string) index.Directory {
+// newS3Dir creates a new s3Dir instance which can be used to create s3 backed indexes
+func newS3Dir(bucket, prefix string) index.Directory {
 	// Load the Shared AWS Configuration (~/.aws/config)
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -41,7 +41,7 @@ func NewS3Directory(bucket, prefix string) index.Directory {
 	}
 	client := s3.NewFromConfig(cfg)
 
-	directory := &S3Directory{
+	directory := &s3Dir{
 		Bucket: bucket,
 		Prefix: prefix,
 		Client: client,
@@ -50,27 +50,26 @@ func NewS3Directory(bucket, prefix string) index.Directory {
 	return directory
 }
 
-func (s *S3Directory) fileName(kind string, id uint64) string {
+func (s *s3Dir) fileName(kind string, id uint64) string {
 	return fmt.Sprintf("%012x", id) + kind
 }
 
-func (s *S3Directory) Setup(readOnly bool) error {
+func (s *s3Dir) Setup(readOnly bool) error {
 	return nil
 }
 
 // List the ids of all the items of the specified kind
 // Items are returned in descending order by id
-func (s *S3Directory) List(kind string) ([]uint64, error) {
+func (s *s3Dir) List(kind string) ([]uint64, error) {
 	log.Print("List: s3 ListObjectsV2 call made for List: s3://", s.Bucket+"/"+s.Prefix)
 	var itemList []uint64
 
-	ctx := context.Background()
 	params := s3.ListObjectsV2Input{
 		Bucket: &s.Bucket,
 		Prefix: &s.Prefix,
 	}
 
-	val, err := s.Client.ListObjectsV2(ctx, &params)
+	val, err := s.Client.ListObjectsV2(context.Background(), &params)
 	if err != nil {
 		log.Print("List: failed to list objects: ", err.Error())
 		return nil, err
@@ -97,24 +96,20 @@ func (s *S3Directory) List(kind string) ([]uint64, error) {
 	return itemList, nil
 }
 
-// Load the specified item
+// Load the specified items.
 // Item data is accessible via the returned *segment.Data structure
 // A io.Closer is returned, which must be called to release
 // resources held by this open item.
 // NOTE: care must be taken to handle a possible nil io.Closer
-func (s *S3Directory) Load(kind string, id uint64) (*segment.Data, io.Closer, error) {
-	ctx := context.Background()
-
+func (s *s3Dir) Load(kind string, id uint64) (*segment.Data, io.Closer, error) {
 	key := s.Prefix + "/" + s.fileName(kind, id)
-
 	goi := &s3.GetObjectInput{
 		Bucket: &s.Bucket,
 		Key:    &key,
 	}
 
 	log.Print("Load: s3 GetObject call made. s3://", s.Bucket, "/", key)
-
-	output, err := s.Client.GetObject(ctx, goi)
+	output, err := s.Client.GetObject(context.Background(), goi)
 	if err != nil {
 		log.Print("Load: failed to get object: s3://"+s.Bucket+"/"+key, err.Error())
 		return nil, nil, err
@@ -132,7 +127,7 @@ func (s *S3Directory) Load(kind string, id uint64) (*segment.Data, io.Closer, er
 // Persist a new item with data from the provided WriterTo
 // Implementations should monitor the closeCh and return with error
 // in the event it is closed before completion.
-func (s *S3Directory) Persist(kind string, id uint64, w index.WriterTo, closeCh chan struct{}) error {
+func (s *s3Dir) Persist(kind string, id uint64, w index.WriterTo, closeCh chan struct{}) error {
 	var buf bytes.Buffer
 	_, err := w.WriteTo(&buf, closeCh)
 	if err != nil {
@@ -141,18 +136,14 @@ func (s *S3Directory) Persist(kind string, id uint64, w index.WriterTo, closeCh 
 	}
 
 	s3ObjectName := s.fileName(kind, id)
-
 	path := filepath.Join(s.Prefix, s3ObjectName)
-
-	ctx := context.Background()
-
 	params := s3.PutObjectInput{
 		Bucket: &s.Bucket,
 		Key:    &path,
 		Body:   bytes.NewReader(buf.Bytes()),
 	}
 
-	ouput, err := s.Client.PutObject(ctx, &params)
+	ouput, err := s.Client.PutObject(context.Background(), &params)
 	if err != nil {
 		log.Print("Persist: failed to write object: ", err.Error())
 		return err
@@ -164,7 +155,7 @@ func (s *S3Directory) Persist(kind string, id uint64, w index.WriterTo, closeCh 
 }
 
 // Remove the specified item
-func (s *S3Directory) Remove(kind string, id uint64) error {
+func (s *s3Dir) Remove(kind string, id uint64) error {
 	objectToDelete := filepath.Join(s.Prefix, s.fileName(kind, id))
 	ctx := context.Background()
 	doi := &s3.DeleteObjectInput{
@@ -182,7 +173,7 @@ func (s *S3Directory) Remove(kind string, id uint64) error {
 }
 
 // Stats returns total number of items and their cumulative size
-func (s *S3Directory) Stats() (objectCount, sizeOfObjects uint64) {
+func (s *s3Dir) Stats() (objectCount, sizeOfObjects uint64) {
 	log.Print("Stats: s3 ListObjectsV2 call made for Stats")
 
 	ctx := context.Background()
@@ -209,16 +200,16 @@ func (s *S3Directory) Stats() (objectCount, sizeOfObjects uint64) {
 }
 
 // Sync ensures directory metadata itself has been committed
-func (s *S3Directory) Sync() error {
+func (s *s3Dir) Sync() error {
 	return nil
 }
 
 // Lock ensures this process has exclusive access to write in this directory
-func (s *S3Directory) Lock() error {
+func (s *s3Dir) Lock() error {
 	return nil
 }
 
 // Unlock releases the lock held on this directory
-func (s *S3Directory) Unlock() error {
+func (s *s3Dir) Unlock() error {
 	return nil
 }

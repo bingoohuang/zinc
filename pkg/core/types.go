@@ -5,14 +5,13 @@ import (
 )
 
 // ZincIndexList Nothing to handle in the error. If you can't load indexes then everything is broken.
-var ZincIndexList map[string]*Index
-
-var ZincSystemIndexList, _ = LoadZincSystemIndexes()
+var (
+	ZincIndexList, _       = LoadZincIndexesFromDisk()
+	ZincSystemIndexList, _ = LoadZincSystemIndexes()
+)
 
 func init() {
-	ZincIndexList, _ = LoadZincIndexesFromDisk()
 	s3List, _ := LoadZincIndexesFromS3()
-	// Load the indexes from disk.
 	for k, v := range s3List {
 		ZincIndexList[k] = v
 	}

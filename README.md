@@ -81,7 +81,7 @@ Docker images are available at https://gallery.ecr.aws/prabhat/zinc
 
 > $ mkdir data
 
-> $ docker run -v /full/path/of/data:/data -e ZINC_DATA_DIR="/data" -p 4080:4080 -e ZINC_ADMIN=admin:admin --name zinc public.ecr.aws/prabhat/zinc:latest
+> $ docker run -v /full/path/of/data:/data -e ZINC_DIR="/data" -p 4080:4080 -e ZINC_ADMIN=admin:admin --name zinc public.ecr.aws/prabhat/zinc:latest
 
 Now point your browser to http://localhost:4080 and login
 

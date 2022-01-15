@@ -11,48 +11,44 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (ind *Index) Search(iQuery v1.ZincQuery) (v1.SearchResponse, error) {
+func (ind *Index) Search(q v1.ZincQuery) (v1.SearchResponse, error) {
 	var Hits []v1.Hit
 
 	var searchRequest bluge.SearchRequest
 
-	if iQuery.MaxResults == 0 {
-		iQuery.MaxResults = 20
+	if q.MaxResults == 0 {
+		q.MaxResults = 20
 	}
 
 	var err error
 
-	switch iQuery.SearchType {
+	switch q.SearchType {
 	case "alldocuments":
-		searchRequest, err = uquery.AllDocuments(iQuery)
+		searchRequest, err = uquery.AllDocuments(q)
 	case "wildcard":
-		searchRequest, err = uquery.WildcardQuery(iQuery)
+		searchRequest, err = uquery.WildcardQuery(q)
 	case "fuzzy":
-		searchRequest, err = uquery.FuzzyQuery(iQuery)
+		searchRequest, err = uquery.FuzzyQuery(q)
 	case "term":
-		searchRequest, err = uquery.TermQuery(iQuery)
+		searchRequest, err = uquery.TermQuery(q)
 	case "daterange":
-		searchRequest, err = uquery.DateRangeQuery(iQuery)
+		searchRequest, err = uquery.DateRangeQuery(q)
 	case "matchall":
-		searchRequest, err = uquery.MatchAllQuery(iQuery)
+		searchRequest, err = uquery.MatchAllQuery(q)
 	case "match":
-		searchRequest, err = uquery.MatchQuery(iQuery)
+		searchRequest, err = uquery.MatchQuery(q)
 	case "matchphrase":
-		searchRequest, err = uquery.MatchPhraseQuery(iQuery)
+		searchRequest, err = uquery.MatchPhraseQuery(q)
 	case "multiphrase":
-		searchRequest, err = uquery.MultiPhraseQuery(iQuery)
+		searchRequest, err = uquery.MultiPhraseQuery(q)
 	case "prefix":
-		searchRequest, err = uquery.PrefixQuery(iQuery)
+		searchRequest, err = uquery.PrefixQuery(q)
 	case "querystring":
-		searchRequest, err = uquery.QueryStringQuery(iQuery)
+		searchRequest, err = uquery.QueryStringQuery(q)
 	}
 
 	if err != nil {
-		resp := v1.SearchResponse{
-			Error: err.Error(),
-		}
-
-		return resp, err
+		return v1.SearchResponse{Error: err.Error()}, err
 	}
 
 	// sample time range aggregation start

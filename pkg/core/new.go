@@ -2,8 +2,8 @@ package core
 
 import (
 	"github.com/blugelabs/bluge"
-	"github.com/prabhatsharma/zinc/pkg/directory"
-	"github.com/prabhatsharma/zinc/pkg/zutils"
+	"github.com/prabhatsharma/zinc/pkg/dir"
+	"github.com/prabhatsharma/zinc/pkg/zutil"
 )
 
 type StorageType string
@@ -17,11 +17,9 @@ const (
 func NewIndex(name string, storageType StorageType) (*Index, error) {
 	config := func(storageType StorageType) bluge.Config {
 		if storageType == S3 {
-			s := zutils.GetEnv("S3_BUCKET", "")
-			return directory.GetS3Config(s, name)
+			return dir.GetS3Config(zutil.GetS3Bucket(), name)
 		} else { // Default storage type is disk
-			s := zutils.GetEnv("ZINC_DATA_DIR", "./data")
-			return bluge.DefaultConfig(s + "/" + name)
+			return bluge.DefaultConfig(zutil.GetDataDir() + "/" + name)
 		}
 	}(storageType)
 
@@ -42,13 +40,12 @@ func NewIndex(name string, storageType StorageType) (*Index, error) {
 	}
 
 	index.CachedMapping = mapping
-
 	return index, nil
 }
 
 func IndexExists(index string) (bool, StorageType) {
-	if _, ok := ZincIndexList[index]; ok {
-		return true, ZincIndexList[index].StorageType
+	if v, ok := ZincIndexList[index]; ok {
+		return true, v.StorageType
 	}
 
 	return false, ""

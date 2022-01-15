@@ -24,18 +24,12 @@ func SetRoutes(r *gin.Engine) {
 	}))
 
 	// meta service - health
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
-	r.GET("/", func(c *gin.Context) {
-		c.Redirect(301, "/ui/")
-	})
+	r.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	r.GET("/", func(c *gin.Context) { c.Redirect(301, "/ui/") })
 	r.GET("/version", v1.GetVersion)
-
 	r.StaticFS("/ui", http.FS(zinc.FrontendAssets))
 
-	r.POST("/api/login", handlers.ValidateCredentials)
-
+	r.POST("/api/login", handlers.ValidateUser)
 	r.PUT("/api/user", auth.ZincAuth, handlers.CreateUpdateUser)
 	r.DELETE("/api/user/:userID", auth.ZincAuth, handlers.DeleteUser)
 	r.GET("/api/users", auth.ZincAuth, handlers.GetUsers)
@@ -49,7 +43,7 @@ func SetRoutes(r *gin.Engine) {
 	r.POST("/api/:target/_bulk", auth.ZincAuth, handlers.BulkHandler)
 
 	// Document CRUD APIs. Update is same as create.
-	r.PUT("/api/:target/document", auth.ZincAuth, handlers.UpdateDoc)
+	r.PUT("/api/:target/doc", auth.ZincAuth, handlers.UpdateDoc)
 	r.POST("/api/:target/_doc", auth.ZincAuth, handlers.UpdateDoc)
 	r.PUT("/api/:target/_doc/:id", auth.ZincAuth, handlers.UpdateDoc)
 	r.POST("/api/:target/_search", auth.ZincAuth, handlers.SearchIndex)
