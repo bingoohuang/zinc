@@ -244,7 +244,7 @@ func ZincAuth(c *gin.Context) {
 		return
 	}
 
-	if ok, _ := VerifyCredentials(user, password); ok {
+	if _, ok := VerifyUser(user, password); ok {
 		c.Next()
 		return
 	}
@@ -253,7 +253,7 @@ func ZincAuth(c *gin.Context) {
 	return
 }
 
-func VerifyCredentials(user, password string) (bool, SimpleUser) {
+func VerifyUser(user, password string) (SimpleUser, bool) {
 	reader, _ := core.ZincSystemIndexList["_users"].Writer.Reader()
 	defer reader.Close()
 
@@ -283,7 +283,6 @@ func VerifyCredentials(user, password string) (bool, SimpleUser) {
 			case "role":
 				sUser.Role = string(value)
 			}
-
 			return true
 		})
 		if err != nil {
@@ -291,11 +290,11 @@ func VerifyCredentials(user, password string) (bool, SimpleUser) {
 		}
 
 		if GeneratePassword(password, storedSalt) == storedPassword {
-			return true, sUser
+			return sUser, true
 		}
 
 		next, err = dmi.Next()
 	}
 
-	return false, sUser
+	return sUser, false
 }

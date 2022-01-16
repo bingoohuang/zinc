@@ -29,7 +29,7 @@ func SetRoutes(r *gin.Engine) {
 	r.GET("/version", v1.GetVersion)
 	r.StaticFS("/ui", http.FS(zinc.FrontendAssets))
 
-	r.POST("/api/login", handlers.ValidateUser)
+	r.POST("/api/login", handlers.Login)
 	r.PUT("/api/user", auth.ZincAuth, handlers.CreateUpdateUser)
 	r.DELETE("/api/user/:userID", auth.ZincAuth, handlers.DeleteUser)
 	r.GET("/api/users", auth.ZincAuth, handlers.GetUsers)

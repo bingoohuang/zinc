@@ -8,25 +8,19 @@ import (
 func GetUsers(c *gin.Context) {
 	res, err := auth.GetAllUsersWorker()
 	if err != nil {
-		c.JSON(500, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(200, res)
 }
 
-func ValidateUser(c *gin.Context) {
+func Login(c *gin.Context) {
 	var user auth.ZincUser
-
 	c.BindJSON(&user)
 
-	validationResult, loggedInUser := auth.VerifyCredentials(user.ID, user.Password)
-	c.JSON(200, gin.H{
-		"validated": validationResult,
-		"user":      loggedInUser,
-	})
+	simpleUser, ok := auth.VerifyUser(user.ID, user.Password)
+	c.JSON(200, gin.H{"validated": ok, "user": simpleUser})
 }
 
 func CreateUpdateUser(c *gin.Context) {
@@ -35,21 +29,14 @@ func CreateUpdateUser(c *gin.Context) {
 
 	newUser, err := auth.CreateUser(user.ID, user.Name, user.Password, user.Role)
 	if err != nil {
-		c.JSON(200, gin.H{
-			"message": err.Error(),
-		})
+		c.JSON(200, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(200, gin.H{
-		"message": newUser,
-	})
+	c.JSON(200, gin.H{"message": newUser.ID})
 }
 
 func DeleteUser(c *gin.Context) {
 	userID := c.Param("userID")
-
-	c.JSON(200, gin.H{
-		"deleted": auth.DeleteUser(userID),
-	})
+	c.JSON(200, gin.H{"deleted": auth.DeleteUser(userID)})
 }
