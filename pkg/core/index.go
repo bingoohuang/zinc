@@ -3,13 +3,13 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"reflect"
 	"strconv"
 	"time"
 
 	"github.com/jeremywohl/flatten"
 	"github.com/prabhatsharma/zinc/pkg/zutil"
-	"github.com/rs/zerolog/log"
 
 	"github.com/blugelabs/bluge"
 )
@@ -131,7 +131,7 @@ func (ind *Index) GetStoredMapping() (map[string]string, error) {
 
 	dmi, err := reader.Search(context.Background(), searchRequest)
 	if err != nil {
-		log.Log().Msg("error executing search: " + err.Error())
+		log.Printf("error executing search: %v", err)
 	}
 
 	next, err := dmi.Next()

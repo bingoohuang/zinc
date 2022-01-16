@@ -2,10 +2,11 @@ package main
 
 import (
 	"errors"
+	"log"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/rs/zerolog/log"
-	"os"
 
 	"github.com/prabhatsharma/zinc/pkg/routes"
 	"github.com/prabhatsharma/zinc/pkg/zutil"

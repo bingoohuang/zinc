@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"path/filepath"
 	"strconv"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/blugelabs/bluge"
 	"github.com/blugelabs/bluge/index"
 	segment "github.com/blugelabs/bluge_segment_api"
-	"github.com/rs/zerolog/log"
 )
 
 // GetS3Config returns a bluge config that will store index data in S3

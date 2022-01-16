@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/blugelabs/bluge"
 	v1 "github.com/prabhatsharma/zinc/pkg/meta/v1"
 	"github.com/prabhatsharma/zinc/pkg/zutil"
-	"github.com/rs/zerolog/log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prabhatsharma/zinc/pkg/core"

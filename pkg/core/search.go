@@ -3,12 +3,12 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/blugelabs/bluge"
 	v1 "github.com/prabhatsharma/zinc/pkg/meta/v1"
 	"github.com/prabhatsharma/zinc/pkg/uquery"
-	"github.com/rs/zerolog/log"
 )
 
 func (ind *Index) Search(q v1.ZincQuery) (v1.SearchResponse, error) {

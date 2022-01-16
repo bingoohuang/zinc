@@ -2,13 +2,12 @@ package core
 
 import (
 	"context"
+	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/prabhatsharma/zinc/pkg/zutil"
-
-	"github.com/rs/zerolog/log"
 )
 
 var systemIndexList = []string{"_users", "_index_mapping"}
@@ -37,14 +36,14 @@ func LoadZincIndexesFromDisk() (map[string]*Index, error) {
 	indexList := make(map[string]*Index)
 	files, err := os.ReadDir(zutil.GetDataDir())
 	if err != nil {
-		log.Fatal().Msg("Error reading data directory: " + err.Error())
+		log.Fatalf("Error reading data directory: %v", err)
 	}
 
 	for _, f := range files {
 		iName := f.Name()
 		if isSystemIndex := zutil.SliceContains(systemIndexList, iName); !isSystemIndex {
 			if tempIndex, err := NewIndex(iName, Disk); err != nil {
-				log.Print("Error loading index: ", iName, " : ", err.Error()) // inform and move in to next index
+				log.Printf("Error loading index: %s, error: %v", iName, err) // inform and move in to next index
 			} else {
 				indexList[iName] = tempIndex
 				indexList[iName].IndexType = "user"

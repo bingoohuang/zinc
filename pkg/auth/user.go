@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/blugelabs/bluge"
 	"github.com/prabhatsharma/zinc/pkg/core"
-	"github.com/rs/zerolog/log"
 )
 
 func GetUser(userId string) (bool, ZincUser, error) {

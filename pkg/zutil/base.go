@@ -2,10 +2,9 @@ package zutil
 
 import (
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/rs/zerolog/log"
 )
 
 // GetEnv returns the value of the environment variable named by the key and returns the default value if the environment variable is not set.
@@ -31,11 +30,14 @@ func GetDataDir() string {
 	dir := GetEnv("ZINC_DIR", filepath.Join(pre, ".zinc/data"))
 	if _, err := os.Stat(dir); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			log.Fatal().Msgf("failed to stat dir %s: %v", dir, err)
+			log.Fatalf("stat dir  %s error: %v", dir, err)
 		}
-		if err := os.MkdirAll(dir, 0777); err != nil {
+
+		log.Printf("start to create dir %s", dir)
+		if err := os.MkdirAll(dir, 0o777); err != nil {
+			log.Printf("W! MkdirAll dir %s, error: %v", dir, err)
 			if errors.Is(err, os.ErrPermission) {
-				chmodRecursively(dir, 0777)
+				chmodRecursively(dir, 0o777)
 			}
 		}
 	}
@@ -44,12 +46,15 @@ func GetDataDir() string {
 }
 
 func chmodRecursively(parent string, mode os.FileMode) {
-	if _, err := os.Stat(parent); err == nil {
+	_, err := os.Stat(parent)
+	if err == nil {
 		return
 	}
-
+	log.Printf("W! stat dir %s, error: %v", parent, err)
 	chmodRecursively(filepath.Dir(parent), mode)
-	os.Chmod(parent, mode)
+	if err := os.Chmod(parent, mode); err != nil {
+		log.Printf("W! chmod dir %s, error: %v", parent, err)
+	}
 }
 
 func SliceContains(slice []string, key string) bool {

@@ -4,8 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
-
-	"github.com/rs/zerolog/log"
+	"log"
 
 	"github.com/blugelabs/bluge/index"
 	"github.com/gin-gonic/gin"

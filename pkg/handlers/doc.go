@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 
 	"github.com/blugelabs/bluge"
 	"github.com/gin-gonic/gin"
