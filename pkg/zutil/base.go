@@ -5,7 +5,21 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 )
+
+// GetEnvInt returns the value of the environment variable named by the key and returns the default value if the environment variable is not set.
+func GetEnvInt(key string, fallback int) int {
+	if s, _ := os.LookupEnv(key); s != "" {
+		if i, err := strconv.ParseInt(s, 10, 32); err == nil {
+			return int(i)
+		}
+
+		log.Printf("failed to parse env %s as int", s)
+	}
+
+	return fallback
+}
 
 // GetEnv returns the value of the environment variable named by the key and returns the default value if the environment variable is not set.
 func GetEnv(key, fallback string) string {

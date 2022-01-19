@@ -10,21 +10,26 @@ import (
 	"github.com/prabhatsharma/zinc/pkg/zutil"
 )
 
-var systemIndexList = []string{"_users", "_index_mapping"}
+const (
+	SystemIndexUsers   string = "_users"
+	SystemIndexMapping string = "_index_mapping"
+)
+
+var systemIndexList = []string{SystemIndexUsers, SystemIndexMapping}
 
 func LoadZincSystemIndexes() (map[string]*Index, error) {
 	log.Print("Loading system indexes...")
 
 	IndexList := make(map[string]*Index)
 	for _, systemIndex := range systemIndexList {
-		tempIndex, err := NewIndex(systemIndex, Disk)
+		idx, err := NewIndex(systemIndex, Disk)
 		if err != nil {
-			log.Print("Error loading system index: ", systemIndex, " : ", err.Error())
+			log.Printf("Error loading system index %s error : %v", systemIndex, err.Error())
 			return nil, err
 		}
-		IndexList[systemIndex] = tempIndex
+		IndexList[systemIndex] = idx
 		IndexList[systemIndex].IndexType = "system"
-		log.Print("Index loaded: " + systemIndex)
+		log.Printf("Index %s loaded", systemIndex)
 	}
 
 	return IndexList, nil
@@ -41,14 +46,16 @@ func LoadZincIndexesFromDisk() (map[string]*Index, error) {
 
 	for _, f := range files {
 		iName := f.Name()
-		if isSystemIndex := zutil.SliceContains(systemIndexList, iName); !isSystemIndex {
-			if tempIndex, err := NewIndex(iName, Disk); err != nil {
-				log.Printf("Error loading index: %s, error: %v", iName, err) // inform and move in to next index
-			} else {
-				indexList[iName] = tempIndex
-				indexList[iName].IndexType = "user"
-				log.Print("Index loaded: " + iName)
-			}
+		if isSystemIndex := zutil.SliceContains(systemIndexList, iName); isSystemIndex {
+			continue
+		}
+
+		if idx, err := NewIndex(iName, Disk); err != nil {
+			log.Printf("Error loading index: %s, error: %v", iName, err) // inform and move in to next index
+		} else {
+			indexList[iName] = idx
+			indexList[iName].IndexType = "user"
+			log.Print("Index loaded: " + iName)
 		}
 	}
 
@@ -86,12 +93,12 @@ func LoadZincIndexesFromS3() (map[string]*Index, error) {
 
 	for _, obj := range val.CommonPrefixes {
 		iName := (*obj.Prefix)[0 : len(*obj.Prefix)-1]
-		tempIndex, err := NewIndex(iName, S3)
+		idx, err := NewIndex(iName, S3)
 
 		if err != nil {
 			log.Print("failed to load index "+iName+" in s3: ", err.Error())
 		} else {
-			IndexList[iName] = tempIndex
+			IndexList[iName] = idx
 			IndexList[iName].IndexType = "user"
 			IndexList[iName].StorageType = S3
 			log.Print("Index loaded: " + iName)

@@ -103,7 +103,7 @@ func (ind *Index) SetMapping(iMap map[string]string) error {
 	bdoc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
 
 	// update on the disk
-	systemIndex := ZincSystemIndexList["_index_mapping"].Writer
+	systemIndex := ZincSystemIndexList[SystemIndexMapping].Writer
 	err := systemIndex.Update(bdoc.ID(), bdoc)
 	if err != nil {
 		log.Printf("error updating document: %v", err)

@@ -2,6 +2,8 @@ package zinc
 
 import (
 	"embed"
+	"github.com/prabhatsharma/zinc/pkg/auth"
+	"github.com/prabhatsharma/zinc/pkg/core"
 	"io/fs"
 )
 
@@ -17,3 +19,8 @@ var FrontendAssets = func() fs.FS {
 
 	return f
 }()
+
+func Init() {
+	core.Init()
+	auth.Init()
+}

@@ -21,7 +21,7 @@ func GetUser(userId string) (bool, ZincUser, error) {
 
 	query := bluge.NewTermQuery(userId)
 	searchRequest := bluge.NewTopNSearch(1, query)
-	usersIndex := core.ZincSystemIndexList["_users"]
+	usersIndex := core.ZincSystemIndexList[core.SystemIndexUsers]
 	reader, _ := usersIndex.Writer.Reader()
 	dmi, err := reader.Search(context.Background(), searchRequest)
 	if err != nil {
@@ -62,7 +62,7 @@ func GetUser(userId string) (bool, ZincUser, error) {
 }
 
 func GetAllUsersWorker() (v1.SearchResponse, error) {
-	usersIndex := core.ZincSystemIndexList["_users"]
+	usersIndex := core.ZincSystemIndexList[core.SystemIndexUsers]
 	var Hits []v1.Hit
 
 	query := bluge.NewMatchAllQuery()
@@ -120,24 +120,24 @@ func GetAllUsersWorker() (v1.SearchResponse, error) {
 	return resp, nil
 }
 
-func CreateUser(userId, name, plaintextPassword, role string) (*ZincUser, error) {
+func CreateUser(userId, name, plainPassword, role string) (*ZincUser, error) {
 	userExists, existingUser, err := GetUser(userId)
 	if err != nil {
 		return nil, err
 	}
 
-	var newUser *ZincUser
+	var user *ZincUser
 	if userExists {
-		newUser = &existingUser
-		if plaintextPassword != "" {
-			newUser.Salt = GenerateSalt()
-			newUser.Password = GeneratePassword(plaintextPassword, newUser.Salt)
+		user = &existingUser
+		if plainPassword != "" {
+			user.Salt = GenerateSalt()
+			user.Password = GeneratePassword(plainPassword, user.Salt)
 		}
-		newUser.Name = name
-		newUser.Role = role
-		newUser.Timestamp = time.Now()
+		user.Name = name
+		user.Role = role
+		user.Timestamp = time.Now()
 	} else {
-		newUser = &ZincUser{
+		user = &ZincUser{
 			SimpleUser: SimpleUser{
 				ID:        userId,
 				Name:      name,
@@ -147,30 +147,29 @@ func CreateUser(userId, name, plaintextPassword, role string) (*ZincUser, error)
 			},
 		}
 
-		newUser.Salt = GenerateSalt()
-		newUser.Password = GeneratePassword(plaintextPassword, newUser.Salt)
+		user.Salt = GenerateSalt()
+		user.Password = GeneratePassword(plainPassword, user.Salt)
 	}
 
-	doc := bluge.NewDocument(newUser.ID)
+	doc := bluge.NewDocument(user.ID)
 
-	doc.AddField(bluge.NewTextField("name", newUser.Name).StoreValue())
-	doc.AddField(bluge.NewStoredOnlyField("password", []byte(newUser.Password)).StoreValue())
-	doc.AddField(bluge.NewStoredOnlyField("role", []byte(newUser.Role)).StoreValue())
-	doc.AddField(bluge.NewStoredOnlyField("salt", []byte(newUser.Salt)).StoreValue())
-	doc.AddField(bluge.NewDateTimeField("created_at", newUser.CreatedAt).StoreValue())
-	doc.AddField(bluge.NewDateTimeField("updated_at", newUser.Timestamp).StoreValue())
+	doc.AddField(bluge.NewTextField("name", user.Name).StoreValue())
+	doc.AddField(bluge.NewStoredOnlyField("password", []byte(user.Password)).StoreValue())
+	doc.AddField(bluge.NewStoredOnlyField("role", []byte(user.Role)).StoreValue())
+	doc.AddField(bluge.NewStoredOnlyField("salt", []byte(user.Salt)).StoreValue())
+	doc.AddField(bluge.NewDateTimeField("created_at", user.CreatedAt).StoreValue())
+	doc.AddField(bluge.NewDateTimeField("updated_at", user.Timestamp).StoreValue())
 
 	doc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
 
-	usersIndexWriter := core.ZincSystemIndexList["_users"].Writer
+	usersIndexWriter := core.ZincSystemIndexList[core.SystemIndexUsers].Writer
 
-	err = usersIndexWriter.Update(doc.ID(), doc)
-	if err != nil {
+	if err = usersIndexWriter.Update(doc.ID(), doc); err != nil {
 		fmt.Println("error updating document:", err)
 		return nil, err
 	}
 
-	return newUser, nil
+	return user, nil
 }
 
 func GeneratePassword(password, salt string) string {
@@ -219,10 +218,8 @@ type Argon2Params struct {
 
 func DeleteUser(userId string) bool {
 	bdoc := bluge.NewDocument(userId)
-
 	bdoc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
-
-	usersIndexWriter := core.ZincSystemIndexList["_users"].Writer
+	usersIndexWriter := core.ZincSystemIndexList[core.SystemIndexUsers].Writer
 
 	err := usersIndexWriter.Delete(bdoc.ID())
 	if err != nil {
@@ -254,7 +251,7 @@ func ZincAuth(c *gin.Context) {
 }
 
 func VerifyUser(user, password string) (SimpleUser, bool) {
-	reader, _ := core.ZincSystemIndexList["_users"].Writer.Reader()
+	reader, _ := core.ZincSystemIndexList[core.SystemIndexUsers].Writer.Reader()
 	defer reader.Close()
 
 	termQuery := bluge.NewTermQuery(user).SetField("_id")

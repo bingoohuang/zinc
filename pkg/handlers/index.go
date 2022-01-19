@@ -107,7 +107,7 @@ func DeleteIndex(c *gin.Context) {
 
 	// 4. Delete the index mapping
 	bdoc := bluge.NewDocument(indexName)
-	if err := core.ZincSystemIndexList["_index_mapping"].Writer.Delete(bdoc.ID()); err != nil {
+	if err := core.ZincSystemIndexList[core.SystemIndexMapping].Writer.Delete(bdoc.ID()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
