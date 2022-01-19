@@ -10,6 +10,30 @@ var (
 	ZincSystemIndexList map[string]*Index
 )
 
+func FindIndex(index string) (*Index, bool) {
+	if v, ok := ZincIndexList[index]; ok {
+		return v, true
+	}
+
+	return nil, false
+}
+
+// GetIndex gets or creates a new index by the index name.
+func GetIndex(indexName string) (*Index, error) {
+	v, ok := ZincIndexList[indexName]
+	if ok {
+		return v, nil
+	}
+
+	idx, err := NewIndex(indexName, Disk)
+	if err != nil {
+		return nil, err
+	}
+
+	ZincIndexList[indexName] = idx // Load the index in memory
+	return idx, nil
+}
+
 // Init initializes the zinc.
 func Init() {
 	ZincIndexList, _ = LoadZincIndexesFromDisk()

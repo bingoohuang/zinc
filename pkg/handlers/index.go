@@ -36,37 +36,34 @@ type SimpleIndex struct {
 
 // SearchIndex searches the index for the given http request from end user
 func SearchIndex(c *gin.Context) {
-	indexName := c.Param("target")
-	if indexExists, _ := core.IndexExists(indexName); !indexExists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "index '" + indexName + "' does not exist"})
+	name := c.Param("target")
+	index, ok := core.FindIndex(name)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "index '" + name + "' does not exist"})
 		return
 	}
 
 	var query v1.ZincQuery
 	c.BindJSON(&query)
 
-	index := core.ZincIndexList[indexName]
-	res, errS := index.Search(query)
-	if errS != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errS.Error()})
-		return
+	if res, err := index.Search(query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, res)
 	}
-
-	c.JSON(http.StatusOK, res)
 }
 
 func CreateIndex(c *gin.Context) {
 	var newIndex core.Index
 	c.BindJSON(&newIndex)
 
-	cIndex, err := core.NewIndex(newIndex.Name, newIndex.StorageType)
+	index, err := core.NewIndex(newIndex.Name, newIndex.StorageType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	core.ZincIndexList[newIndex.Name] = cIndex
-
+	core.ZincIndexList[newIndex.Name] = index
 	c.JSON(http.StatusOK, gin.H{
 		"result":       "Index: " + newIndex.Name + " created",
 		"storage_type": newIndex.StorageType,
@@ -78,20 +75,20 @@ func DeleteIndex(c *gin.Context) {
 	indexName := c.Param("indexName")
 
 	// 0. Check if index exists and Get the index storage type - disk, s3 or memory
-	indexExists, indexStorageType := core.IndexExists(indexName)
-	if !indexExists {
+	index, ok := core.FindIndex(indexName)
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "index " + indexName + "does not exist"})
 		return
 	}
 
 	// 1. Close the index writer
-	core.ZincIndexList[indexName].Writer.Close()
+	index.Writer.Close()
 
 	// 2. Delete from the cache
 	delete(core.ZincIndexList, indexName)
 
 	// 3. Physically delete the index
-	switch indexStorageType {
+	switch index.StorageType {
 	case core.Disk:
 		if err := os.RemoveAll(zutil.GetDataDir() + "/" + indexName); err != nil {
 			log.Print("failed to delete index: ", err.Error())
@@ -113,7 +110,7 @@ func DeleteIndex(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Deleted",
 			"index":   indexName,
-			"storage": indexStorageType,
+			"storage": index.StorageType,
 		})
 	}
 }

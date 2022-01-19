@@ -6,6 +6,9 @@ import (
 	"io"
 	"log"
 
+	"github.com/bingoohuang/gg/pkg/ss"
+	"github.com/prabhatsharma/zinc/pkg/zutil"
+
 	"github.com/blugelabs/bluge/index"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -13,20 +16,29 @@ import (
 )
 
 func BulkHandler(c *gin.Context) {
-	target := c.Param("target")
-	body := c.Request.Body
-
-	if err := BulkHandlerWorker(target, &body); err != nil {
+	result, err := BulkHandlerWorker(c.Param("target"), c.Request.Body)
+	if err != nil {
 		c.JSON(200, gin.H{"message": err})
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "bulk data inserted"})
+	c.JSON(200, gin.H{
+		"message":     "bulk data inserted",
+		"updateCount": result.UpdateCount,
+		"insertCount": result.InsertCount,
+	})
 }
 
-func BulkHandlerWorker(target string, body *io.ReadCloser) error {
+type BulkResult struct {
+	UpdateCount int
+	InsertCount int
+}
+
+const _index = "_index"
+
+func BulkHandlerWorker(target string, body io.ReadCloser) (*BulkResult, error) {
 	// Prepare to read the entire raw text of the body
-	scanner := bufio.NewScanner(*body)
+	scanner := bufio.NewScanner(body)
 
 	// Set 1 MB max per line. docs at - https://pkg.go.dev/bufio#pkg-constants
 	// This is the max size of a line in a file that we will process
@@ -39,6 +51,7 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 
 	batch := make(map[string]*index.Batch)
 	var indexesInThisBatch []string
+	var bulkResult BulkResult
 
 	for scanner.Scan() { // Read each line
 		var doc map[string]interface{}
@@ -61,84 +74,57 @@ func BulkHandlerWorker(target string, body *io.ReadCloser) error {
 				mintedID = true
 			}
 
-			indexName := lastLineMetaData["_index"].(string)
-
+			indexName := lastLineMetaData[_index].(string)
 			// Since this is a bulk request, we need to check if we already created a new batch for this index. We need to create 1 batch per index.
-			if DoesExistInThisRequest(indexesInThisBatch, indexName) == -1 { // Add the list of indexes to the batch if it's not already there
+			if !zutil.SliceContains(indexesInThisBatch, indexName) { // Add the list of indexes to the batch if it's not already there
 				indexesInThisBatch = append(indexesInThisBatch, indexName)
 				batch[indexName] = index.NewBatch()
 			}
 
-			if exists, _ := core.IndexExists(indexName); !exists { // If the requested indexName does not exist then create it
-				newIndex, err := core.NewIndex(indexName, core.Disk)
-				if err != nil {
-					return err
-				}
-
-				core.ZincIndexList[indexName] = newIndex // Load the index in memory
-			}
-
-			bdoc, err := core.ZincIndexList[indexName].BuildBlugeDocFromJSON(id, &doc)
+			idx, err := core.GetIndex(indexName)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
+			bdoc, err := idx.BuildBlugeDocFromJSON(id, &doc)
 			// Add the document to the batch. We will persist the batch to the index
 			// when we have processed all documents in the request
 			if !mintedID {
 				batch[indexName].Update(bdoc.ID(), bdoc)
+				bulkResult.UpdateCount++
 			} else {
 				batch[indexName].Insert(bdoc)
+				bulkResult.InsertCount++
 			}
 
 		} else { // This branch will process the metadata line in the request. Each metadata line is preceded by a data line.
 			for k, v := range doc {
-				vm, _ := v.(map[string]interface{})
-				if k == "index" || k == "create" || k == "update" {
-					nextLineIsData = true
+				switch k {
+				case "index", "create", "update", "delete":
+					vm, _ := v.(map[string]interface{})
 					lastLineMetaData["operation"] = k
-
-					if vm["_index"] != "" { // if index is specified in metadata then it overtakes the index in the query path
-						lastLineMetaData["_index"] = vm["_index"]
-					} else {
-						lastLineMetaData["_index"] = target
-					}
-
 					lastLineMetaData["_id"] = vm["_id"]
-				} else if k == "delete" {
-					nextLineIsData = false
-					lastLineMetaData["operation"] = k
-					lastLineMetaData["_index"] = vm["_index"]
-					lastLineMetaData["_id"] = vm["_id"]
+					// if index is specified in metadata then it overtakes the index in the query path
+					lastLineMetaData[_index] = ss.Or(vm[_index].(string), target)
+					nextLineIsData = k != "delete"
 				}
 			}
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, indexN := range indexesInThisBatch {
-		writer := core.ZincIndexList[indexN].Writer
+	for _, n := range indexesInThisBatch {
+		writer := core.ZincIndexList[n].Writer
 
 		// Persist the batch to the index
-		if err := writer.Batch(batch[indexN]); err != nil {
+		if err := writer.Batch(batch[n]); err != nil {
 			log.Print("Error updating batch: ", err.Error())
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
-}
-
-// DoesExistInThisRequest takes a slice and looks for an element in it. If found it will
-// return its index, otherwise it will return -1.
-func DoesExistInThisRequest(slice []string, val string) int {
-	for i, item := range slice {
-		if item == val {
-			return i
-		}
-	}
-	return -1
+	return &bulkResult, nil
 }

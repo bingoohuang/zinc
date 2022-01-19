@@ -42,11 +42,3 @@ func NewIndex(name string, storageType StorageType) (*Index, error) {
 	index.CachedMapping = mapping
 	return index, nil
 }
-
-func IndexExists(index string) (bool, StorageType) {
-	if v, ok := ZincIndexList[index]; ok {
-		return true, v.StorageType
-	}
-
-	return false, ""
-}

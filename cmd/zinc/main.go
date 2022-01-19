@@ -3,9 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/prabhatsharma/zinc"
 	"log"
 	"os"
+
+	"github.com/prabhatsharma/zinc"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

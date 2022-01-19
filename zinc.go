@@ -2,9 +2,10 @@ package zinc
 
 import (
 	"embed"
+	"io/fs"
+
 	"github.com/prabhatsharma/zinc/pkg/auth"
 	"github.com/prabhatsharma/zinc/pkg/core"
-	"io/fs"
 )
 
 //go:embed web/dist
@@ -20,6 +21,7 @@ var FrontendAssets = func() fs.FS {
 	return f
 }()
 
+// Init initializes zinc.
 func Init() {
 	core.Init()
 	auth.Init()

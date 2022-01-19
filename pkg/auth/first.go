@@ -16,8 +16,8 @@ func Init() {
 	}
 	if firstStart {
 		// create default user from environment variable
-		admin := zutil.GetEnv("ZINC_ADMIN", "admin:4lf1qScs&m") // 事了拂衣去深藏身与名
-		twgdh, btzhy := Cut(admin, ":")
+		basic := zutil.GetEnv("ZINC_ADMIN", "admin:4lf1qScs&m") // 事了拂衣去深藏身与名
+		twgdh, btzhy := Cut(basic, ":")
 		if twgdh == "" {
 			log.Fatal("ZINC_ADMIN must be set on first start. You should also change the credentials after first login.")
 		}

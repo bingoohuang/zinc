@@ -12,37 +12,17 @@ import (
 )
 
 func UpdateDoc(c *gin.Context) {
-	indexName := c.Param("target")
-	queryId := c.Param("id") // ID for the document to be updated provided in URL path
+	index, err := core.GetIndex(c.Param("target"))
+	if err != nil {
+		log.Print(err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
 
 	var doc map[string]interface{}
 	c.BindJSON(&doc)
 
-	docID := ""
-	// If id field is present then use it, else create a new UUID and use it
-	if id, ok := doc["_id"]; ok {
-		docID = id.(string)
-	} else if queryId != "" {
-		docID = queryId
-	}
-
-	mintedID := docID == ""
-	if mintedID {
-		docID = uuid.New().String() // Generate a new ID if ID was not provided
-	}
-
-	// If the index does not exist, then create it
-	if exists, _ := core.IndexExists(indexName); !exists {
-		newIndex, err := core.NewIndex(indexName, core.Disk) // Create a new index with disk storage as default
-		if err != nil {
-			log.Print(err)
-			c.JSON(http.StatusInternalServerError, err)
-			return
-		}
-		core.ZincIndexList[indexName] = newIndex // Load the index in memory
-	}
-
-	index := core.ZincIndexList[indexName]
+	docID, mintedID := parseDocID(doc, c.Param("id"))
 	if err := index.UpdateDoc(docID, &doc, mintedID); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 	} else {
@@ -50,19 +30,34 @@ func UpdateDoc(c *gin.Context) {
 	}
 }
 
+// parseDocID parse id field is present then use it, else create a new UUID and use it.
+func parseDocID(doc map[string]interface{}, queryId string) (string, bool) {
+	docID := ""
+	if id, ok := doc["_id"]; ok {
+		docID = id.(string)
+	} else if queryId != "" {
+		docID = queryId
+	}
+
+	if docID != "" {
+		return docID, false
+	}
+
+	return uuid.New().String(), true
+}
+
 func DeleteDoc(c *gin.Context) {
 	indexName := c.Param("target")
 	queryId := c.Param("id")
-
-	if indexExists, _ := core.IndexExists(indexName); !indexExists {
+	index, ok := core.FindIndex(indexName)
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "index not exist"})
 		return
 	}
 
 	bdoc := bluge.NewDocument(queryId)
 	bdoc.AddField(bluge.NewCompositeFieldExcluding("_all", nil))
-	docIndexWriter := core.ZincIndexList[indexName].Writer
-	if err := docIndexWriter.Delete(bdoc.ID()); err != nil {
+	if err := index.Writer.Delete(bdoc.ID()); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "Deleted", "index": indexName, "id": queryId})
